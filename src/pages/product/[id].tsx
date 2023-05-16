@@ -8,6 +8,7 @@ import { GetServerSideProps, GetStaticPaths, GetStaticProps } from "next";
 import { stripe } from "../lib/stripe";
 import Stripe from "stripe";
 import Image from "next/image";
+import axios from "axios";
 
 interface ProductProps {
   product: {
@@ -16,10 +17,22 @@ interface ProductProps {
     imageUrl: string;
     price: number;
     description: string;
+    defaultPriceId: string;
   };
 }
 
 export default function Product({ product }: ProductProps) {
+  const handleBuyProduct = async () => {
+    try {
+      const response = await axios.post("/api/checkout", {
+        priceId: product.defaultPriceId,
+      });
+      const { checkoutUrl } = response.data;
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      console.log("err:", err);
+    }
+  };
   return (
     <ProductContainer>
       <ImageContainer>
@@ -34,7 +47,7 @@ export default function Product({ product }: ProductProps) {
         <h1>{product.name}</h1>
         <span>$ {product.price}</span>
         <p>{product.description}</p>
-        <button>Buy Now</button>
+        <button onClick={handleBuyProduct}>Buy Now</button>
       </ProductDetail>
     </ProductContainer>
   );
@@ -63,6 +76,7 @@ export const getStaticProps: GetStaticProps<any, { id: string }> = async ({
         imageUrl: product.images[0],
         price: price.unit_amount! / 100,
         description: product.description,
+        defaultPriceId: price.id,
       },
     },
     revalidate: 60 * 60 * 1,
